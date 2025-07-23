@@ -1,42 +1,36 @@
-# Utilise une image Python slim
+# Utilise une image officielle avec dependencies WeasyPrint
 FROM python:3.11-slim
 
-# Variables d'environnement
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# Crée le répertoire de travail
-WORKDIR /app
-
-# Installe les dépendances système nécessaires à WeasyPrint
+# Install system dependencies for WeasyPrint (Debian-based)
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpango-1.0-0 \
-    libpangoft2-1.0-0 \
     libpangocairo-1.0-0 \
-    libffi-dev \
     libcairo2 \
-    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    libjpeg-dev \
+    libpng-dev \
     libxml2 \
     libxslt1.1 \
-    libjpeg-dev \
-    zlib1g-dev \
+    libgdk-pixbuf2.0-0 \
+    fonts-liberation \
     curl \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copie les fichiers de dépendances Python
-COPY requirements.txt .
+# Set workdir
+WORKDIR /app
 
-# Installe les dépendances Python
+# Copy project
+COPY . /app
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copie tout le projet
-COPY . .
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-# Copie et rend exécutable le script d’entrée
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Expose port
+EXPOSE 9000
 
-# Spécifie le point d'entrée
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Run gunicorn
+CMD ["gunicorn", "htmltopdf.wsgi:application", "--bind", "0.0.0.0:9000"]
