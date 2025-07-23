@@ -1,0 +1,26 @@
+services:
+  web:
+    build: .
+    container_name: django_app
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=htmltopdf.settings
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
+
+volumes:
+  static_volume:
+  media_volume:
