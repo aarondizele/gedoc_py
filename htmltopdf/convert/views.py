@@ -1,8 +1,8 @@
 import os
 import uuid
+from urllib.parse import quote  # pour sécuriser le nom de fichier
 from django.conf import settings
 from django.http import FileResponse, Http404
-from django.utils.http import urlquote  # pour sécuriser le nom de fichier
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -50,14 +50,12 @@ class PdfDocumentView(APIView):
         if os.path.exists(file_path):
             response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
 
-            # Forcer l'affichage dans le navigateur (dans iframe)
-            response['Content-Disposition'] = f'inline; filename="{urlquote(filename)}"'
+            # Affichage inline dans un navigateur (ex: iframe)
+            response['Content-Disposition'] = f'inline; filename="{quote(filename)}"'
 
-            # Supprimer X-Frame-Options pour autoriser l'affichage en iframe
-            if 'X-Frame-Options' in response:
-                del response['X-Frame-Options']
+            # Retirer le header X-Frame-Options si défini automatiquement
+            response.headers.pop('X-Frame-Options', None)
 
             return response
         else:
             raise Http404("Document not found.")
-
