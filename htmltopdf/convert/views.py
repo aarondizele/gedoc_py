@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import HtmlToPdfSerializer
-from weasyprint import HTML, CSS
+from xhtml2pdf import pisa
 
 class HtmlToPdfView(APIView):
     parser_classes = [FormParser, MultiPartParser]
@@ -17,31 +17,35 @@ class HtmlToPdfView(APIView):
             html_content = serializer.validated_data['docFormat']
             orientation = serializer.validated_data.get('orientation', 'portrait')
 
-            # Générer l’orientation via CSS @page
+            # ✅ Générer le CSS @page avec orientation
             page_orientation_css = f"""
-                @page {{
-                    size: A4 {'landscape' if orientation == 'paysage' else 'portrait'};
-                    margin: 1cm;
-                }}
+                <style>
+                    @page {{
+                        size: A4 {'landscape' if orientation == 'paysage' else 'portrait'};
+                        margin: 1cm;
+                    }}
+                </style>
             """
 
-            # Nom et chemin du fichier PDF
+            # ✅ Concaténer le CSS avec le HTML fourni
+            full_html = page_orientation_css + html_content
+
+            # ✅ Générer un nom de fichier unique
             filename = f"{uuid.uuid4().hex}.pdf"
             file_path = os.path.join(settings.MEDIA_ROOT, filename)
             os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
 
-            # Générer le PDF avec WeasyPrint
-            HTML(string=html_content).write_pdf(
-                target=file_path,
-                stylesheets=[CSS(string=page_orientation_css)]
-            )
+            # ✅ Créer le fichier PDF
+            with open(file_path, "wb") as f:
+                pisa_status = pisa.CreatePDF(full_html, dest=f)
 
-            # URL de retour
+            if pisa_status.err:
+                return Response({"error": "PDF generation failed."}, status=500)
+
             url_document = request.build_absolute_uri(settings.MEDIA_URL + filename)
             return Response({"url_document": url_document})
 
         return Response(serializer.errors, status=400)
-
 
 
 class PdfDocumentView(APIView):
