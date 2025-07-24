@@ -1,14 +1,15 @@
 import uuid
 from urllib.parse import quote
+from io import BytesIO
 
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from weasyprint import HTML, CSS
+from django.core.files.storage import default_storage
 
 from .serializers import HtmlToPdfSerializer
 
@@ -30,8 +31,7 @@ class HtmlToPdfView(APIView):
                 }}
             """
 
-            # Génération du PDF (en mémoire)
-            from io import BytesIO
+            # Génération du PDF en mémoire
             pdf_file = BytesIO()
             HTML(string=html_content).write_pdf(
                 target=pdf_file,
@@ -39,20 +39,14 @@ class HtmlToPdfView(APIView):
             )
             pdf_file.seek(0)
 
-            # Nom du fichier
+            # Nom du fichier PDF
             filename = f"{uuid.uuid4().hex}.pdf"
 
-            # Sauvegarde dans le stockage S3 (MinIO)
+            # Enregistrement sur MinIO via django-minio-storage
             path = default_storage.save(filename, ContentFile(pdf_file.read()))
 
-            # Construction de l'URL MinIO
-            # if hasattr(default_storage, 'url'):
-            #     url_document = default_storage.url(path)
-            # else:
-            #     # fallback
-            #     url_document = request.build_absolute_uri(settings.MEDIA_URL + filename)
-            url_document = f"{settings.AWS_S3_CUSTOM_DOMAIN}/{path}"
-
+            # Construction de l'URL publique MinIO
+            url_document = f"{settings.MINIO_STORAGE_MEDIA_URL}/{path}"
 
             return Response({"url_document": url_document})
 
@@ -61,13 +55,13 @@ class HtmlToPdfView(APIView):
 
 class PdfDocumentView(APIView):
     def get(self, request, filename):
-        # Lire depuis MinIO
         if not default_storage.exists(filename):
             raise Http404("Document not found.")
 
         file = default_storage.open(filename, 'rb')
         response = FileResponse(file, content_type='application/pdf')
 
+        # Affichage inline dans iframe
         response['Content-Disposition'] = f'inline; filename="{quote(filename)}"'
         response.headers.pop('X-Frame-Options', None)
 

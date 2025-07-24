@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'rest_framework',
-    'storages',
+    'minio_storage',
+    
     'convert',
 ]
 
@@ -121,16 +122,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # S3 with Minio
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# Active django-minio-storage
+DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
+# STATICFILES_STORAGE = 'minio_storage.storage.MinioStaticStorage'
 
-AWS_ACCESS_KEY_ID = 'minioadmin'
-AWS_SECRET_ACCESS_KEY = 'bzzi0vmb4ypohlcn'
-AWS_STORAGE_BUCKET_NAME = 'gedocs-erp-dgi'  # Ton bucket MinIO
-AWS_S3_ENDPOINT_URL = 'http://172.25.0.2:9000'
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-AWS_S3_ADDRESSING_STYLE = "path"
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}"
+# Configuration MinIO
+MINIO_STORAGE_ENDPOINT = '172.25.0.2:9000'  # IP MinIO + port
+MINIO_STORAGE_ACCESS_KEY = 'minioadmin'
+MINIO_STORAGE_SECRET_KEY = 'bzzi0vmb4ypohlcn'
+MINIO_STORAGE_MEDIA_BUCKET_NAME = 'gedocs-erp-dgi'
+MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True
+MINIO_STORAGE_MEDIA_USE_HTTPS = False  # False si non TLS
 
 
 
