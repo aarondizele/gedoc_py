@@ -3,3 +3,5 @@ djangorestframework
 weasyprint
 gunicorn
 xhtml2pdf
+boto3
+django-storages

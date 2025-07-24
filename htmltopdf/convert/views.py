@@ -1,13 +1,17 @@
-import os
 import uuid
-from urllib.parse import quote  # pour sécuriser le nom de fichier
-from django.conf import settings
-from django.http import FileResponse, Http404
+from urllib.parse import quote
+from io import BytesIO
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import HtmlToPdfSerializer
+from django.http import FileResponse, Http404
 from weasyprint import HTML, CSS
+
+from .serializers import HtmlToPdfSerializer
+
 
 class HtmlToPdfView(APIView):
     parser_classes = [FormParser, MultiPartParser]
@@ -26,36 +30,35 @@ class HtmlToPdfView(APIView):
                 }}
             """
 
-            # Nom et chemin du fichier PDF
-            filename = f"{uuid.uuid4().hex}.pdf"
-            file_path = os.path.join(settings.MEDIA_ROOT, filename)
-            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-
-            # Générer le PDF avec WeasyPrint
+            # Générer PDF en mémoire
+            pdf_file = BytesIO()
             HTML(string=html_content).write_pdf(
-                target=file_path,
+                target=pdf_file,
                 stylesheets=[CSS(string=page_orientation_css)]
             )
+            pdf_file.seek(0)
 
-            # URL de retour
-            url_document = request.build_absolute_uri(settings.MEDIA_URL + filename)
+            # Enregistrer dans MinIO
+            filename = f"{uuid.uuid4().hex}.pdf"
+            saved_path = default_storage.save(filename, ContentFile(pdf_file.read()))
+
+            # Générer URL de retour
+            url_document = default_storage.url(saved_path)
             return Response({"url_document": url_document})
 
         return Response(serializer.errors, status=400)
 
+
 class PdfDocumentView(APIView):
     def get(self, request, filename):
-        file_path = os.path.join(settings.MEDIA_ROOT, filename)
-
-        if os.path.exists(file_path):
-            response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-
-            # Affichage inline dans un navigateur (ex: iframe)
-            response['Content-Disposition'] = f'inline; filename="{quote(filename)}"'
-
-            # Retirer le header X-Frame-Options si défini automatiquement
-            response.headers.pop('X-Frame-Options', None)
-
-            return response
-        else:
+        # Lire depuis MinIO
+        if not default_storage.exists(filename):
             raise Http404("Document not found.")
+
+        file = default_storage.open(filename, 'rb')
+        response = FileResponse(file, content_type='application/pdf')
+
+        response['Content-Disposition'] = f'inline; filename="{quote(filename)}"'
+        response.headers.pop('X-Frame-Options', None)
+
+        return response
