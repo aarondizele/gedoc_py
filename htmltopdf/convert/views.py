@@ -46,11 +46,13 @@ class HtmlToPdfView(APIView):
             path = default_storage.save(filename, ContentFile(pdf_file.read()))
 
             # Construction de l'URL MinIO
-            if hasattr(default_storage, 'url'):
-                url_document = default_storage.url(path)
-            else:
-                # fallback
-                url_document = request.build_absolute_uri(settings.MEDIA_URL + filename)
+            # if hasattr(default_storage, 'url'):
+            #     url_document = default_storage.url(path)
+            # else:
+            #     # fallback
+            #     url_document = request.build_absolute_uri(settings.MEDIA_URL + filename)
+            url_document = f"{settings.AWS_S3_CUSTOM_DOMAIN}/{path}"
+
 
             return Response({"url_document": url_document})
 
