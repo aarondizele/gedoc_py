@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -129,3 +130,28 @@ AWS_S3_ENDPOINT_URL = 'http://172.25.0.2:9000'
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_ADDRESSING_STYLE = "path"
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {  # Affiche les logs dans la console
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',  # ou 'DEBUG' pour plus de détails
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'boto3': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
