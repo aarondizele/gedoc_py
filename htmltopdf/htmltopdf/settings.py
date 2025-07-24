@@ -129,7 +129,7 @@ DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
 # Configuration MinIO
 MINIO_STORAGE_ENDPOINT = '172.25.0.2:9000'  # IP MinIO + port
 MINIO_STORAGE_ACCESS_KEY = 'minioadmin'
-MINIO_STORAGE_SECRET_KEY = 'bzzi0vmb4ypohlcn'
+MINIO_STORAGE_SECRET_KEY = 'jslg8b8ptfbt5ldq'
 MINIO_STORAGE_MEDIA_BUCKET_NAME = 'gedocs-erp-dgi'
 MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True
 MINIO_STORAGE_MEDIA_USE_HTTPS = False  # False si non TLS
